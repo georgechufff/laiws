@@ -1,0 +1,8 @@
+streamlit
+langchain-openai
+langchain-huggingface
+langchain-community
+dotenv
+langchain
+torch
+faiss-cpu
