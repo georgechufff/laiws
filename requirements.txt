@@ -6,3 +6,8 @@ dotenv
 langchain
 torch
 faiss-cpu
+langchain-ollama
+SQLAlchemy
+streamlit_authenticator==0.2.2
+weaviate-client
+langchain-weaviate

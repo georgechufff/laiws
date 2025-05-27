@@ -7,5 +7,5 @@ def read_file(filename: str) -> str:
     return re.sub(' +', ' ', re.sub('\s', ' ', content)).lstrip().rstrip()
 
 path = __file__.replace('__init__.py', '')
-TRANSLATION_PROMPT = read_file(os.path.join(path, 'translation_prompt')).format(lang='Russian')
+TRANSLATION_PROMPT = read_file(os.path.join(path, 'translation_prompt'))
 INTRODUCTION_PROMPT = read_file(os.path.join(path, 'introduction_prompt'))
