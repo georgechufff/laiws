@@ -1,27 +1,17 @@
 import streamlit as st
-from langchain_openai import ChatOpenAI
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.embeddings import OllamaEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain import hub
 import torch
-# import weaviate
-# from langchain_weaviate.vectorstores import WeaviateVectorStore
-from tempfile import NamedTemporaryFile
 from text_extractor import TextExtractor 
 import os
 import warnings
-from openai import OpenAI
 from prompts import TRANSLATION_PROMPT, INTRODUCTION_PROMPT
-from dotenv import load_dotenv
-from auth import validate_email, validate_username
-
-load_dotenv()
+from configs import sync_openai_api
 
 torch.classes.__path__ = [os.path.join(torch.__path__[0], torch.classes.__file__)] 
 
 st.set_page_config(page_title='LWAIS', page_icon='🐍', initial_sidebar_state='collapsed')
-st.title("LAIWS")
+st.title("LWAIS")
 
 try:
     embeddings = HuggingFaceEmbeddings(
@@ -30,29 +20,10 @@ try:
     vector_store = FAISS.load_local(
         "faiss_index", embeddings, allow_dangerous_deserialization=True
     )
-    # client = weaviate.connect_to_local(
-    #     host="127.0.0.1",  # Use a string to specify the host
-    #     port=8080,
-    #     grpc_port=50051,
-    # )
-    # vector_store = WeaviateVectorStore(client=client, 
-    #                                    index_name="text_index", 
-    #                                    text_key="text",
-    #                                    embedding=embeddings)
 
 except Exception as e:
-    print(e)
     warnings.warn("FAISS Database seems to not exist. Trying to recover it manually.")
     from db_creating import vector_store
-
-llm = ChatOpenAI(
-    model_name="openai/gpt-4o-mini",
-    base_url=os.environ['BASE_URL'],
-    api_key=os.environ['API_KEY'],
-) 
-
-prompt = hub.pull("rlm/rag-prompt")
-runnable = prompt | llm
 
 def page_1():
     placeholder.empty()
@@ -127,6 +98,7 @@ elif st.session_state['current_state'] == 3:
 
         text = TextExtractor(uploaded_file.name)
         file_content = text.load()
+        print(file_content)
         os.remove(uploaded_file.name)
     
     else:
@@ -149,17 +121,38 @@ elif st.session_state['current_state'] == 3:
         st.session_state.messages.append({"role": "user", "content": prompt})            
 
         with st.chat_message("assistant"):
+
             query = st.session_state.messages[-1]['content']
+            
             if file_content:
                 query += ('\n' + file_content) 
-            content = vector_store.similarity_search(query)
 
-            print(content)
-
+            content = vector_store.similarity_search(query, k=4)
             docs_content = "\n\n".join(doc.metadata['source'] + ': \n' + doc.page_content for doc in content)
-            answer = runnable.invoke({"question": query, "context": docs_content})
+            
+            messages = [
+                {
+                    "role": "system",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": TRANSLATION_PROMPT
+                        },
+                    ]
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": query,
+                        },
+                    ]
+                },
+            ]
 
-            response = st.write_stream([s + ' ' for s in answer.content.split()])
+            answer = sync_openai_api(messages)
+            response = st.write_stream([s + ' ' for s in answer.split()])
             st.markdown(response)
 
         st.session_state.messages.append({"role": "assistant", "content": response})
