@@ -1,8 +1,14 @@
+datasets
+edoc
 faiss-cpu
+gradio
 langchain
 langchain-community
-langchain-huggingface
 openai
+openpyxl
 python-dotenv
+qdrant_client
+sentence_transformers
 streamlit
 torch
+unstructured
