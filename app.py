@@ -101,21 +101,27 @@ css = """
 
 def respond(message: str, chat_history: list, file: Optional[gr.File] = None):
     if file:
-        file_info = f"<div class='message-file'>📎 Прикреплён файл: {os.path.join(file.name)}</div>"
+        file_info = f"<div class='message-file'>📎 Прикреплён файл: {os.path.basename(file.name)}</div>"
         message_md = f"{message}\n{file_info}"
+        text_extractor = TextExtractor(os.path.join('uploads', os.path.basename(file.name)))
+        file_content = text_extractor.load()
     else:
         message_md = message
+        file_content = ''
         
         
     query_emb = embeddings.encode(message)
     content = qdrant_client.query_points(
         collection_name='laiws',
         query=query_emb,
-        limit=3,
+        limit=4,
         with_payload=True,
     ).points
+    
+    print(content)
 
-    docs_content = "\n".join(doc.payload['page_content'] for doc in content)
+    docs_content = "\n".join(doc.payload['page_content'] for doc in content if doc.score > 0.4)
+    print(docs_content)
     
     messages = [
         {
@@ -132,26 +138,36 @@ def respond(message: str, chat_history: list, file: Optional[gr.File] = None):
             "content": [
                 {
                     "type": "text",
-                    "text": message + docs_content,
+                    "text": '\n'.join([message, file_content, docs_content])
                 },
             ]
         },
     ]
 
     answer = sync_openai_api(messages)
-    answer += "\n\n Список использованных источников: \n" + '\n'.join(c.payload['metadata'] for c in content)
+    if len(docs_content) > 0:
+        answer += f"<div class='message-file'>Список использованных источников: <br> {'<br>'.join(c.payload['metadata'] for c in content)}</div>"
     answer.replace('\n', '<br>')
+    
     chat_history.append((message_md, answer))
     return "", chat_history, None
 
 def clear_chat():
     return []
 
+def new_chat(session_state, chat):
+    session_state.append(chat)
+    return [], session_state
+
+def get_cur_state(session_state, i):
+    return session_state[i]
+
 def remove_file(file_info, file_name_component):
     return None, "", gr.update(visible=False)
 
 with gr.Blocks(css=css, theme=gr.themes.Default()) as demo:
     gr.Markdown("""<h1 style='text-align: center; margin-bottom: 20px;'>LAIWS - ИИ-консультант по юридическим вопросам</h1>""")
+    session_history = gr.State([[]])
     
     chatbot = gr.Chatbot(
         label="Чат с ИИ-юристом", 
@@ -236,6 +252,17 @@ with gr.Blocks(css=css, theme=gr.themes.Default()) as demo:
         clear_chat,
         outputs=chatbot
     )
+    
+    print(session_history)
+    
+    # with gr.Accordion("История чатов", open=False):
+    #     session_size = 0
+    #     session_history.change(lambda session_history: len(session_history), session_size)
+    #     print(int(session_size))
+    #     buttons = []
+    #     for i in range():
+    #         buttons.append(gr.Button(f'Session {i}'))
+    #     print(buttons)
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7861)
+    demo.launch(share=True)

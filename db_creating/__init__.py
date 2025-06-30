@@ -7,9 +7,8 @@
 from datasets import load_dataset
 # from uuid import uuid4
 from tqdm import tqdm
-from configs import qdrant_client
+from configs import embeddings, qdrant_client
 from qdrant_client.models import PointStruct, VectorParams, Distance
-from configs import embeddings
 
 docs = []
 law_dataset = load_dataset('csv', data_files='db_creating/entire_dataset.csv')['train']
@@ -20,7 +19,7 @@ try:
         vectors_config=VectorParams(size=1024, distance=Distance.COSINE)
     )
 
-except:
+except Exception as e:
     pass
 
 count = 0
@@ -36,15 +35,28 @@ for law in tqdm(law_dataset):
         ]
     )
     count += 1
-    if count == 25:
-        count = 0
-        operation_info = qdrant_client.upsert(
-            collection_name="laiws",
-            wait=True,
-            points=[
-                PointStruct(id=i, vector=d[0], payload=d[1]) for i, d in enumerate(docs)
-            ]
-        )
+    if count % 25 == 0:
+        try:
+            operation_info = qdrant_client.upsert(
+                collection_name="laiws",
+                wait=True,
+                points=[
+                    PointStruct(id=count - 25 + i, vector=d[0], payload=d[1]) for i, d in enumerate(docs)
+                ]
+            )
+        except Exception as e:
+            for i, d in enumerate(docs):
+                operation_info = qdrant_client.upsert(
+                    collection_name="laiws",
+                    wait=True,
+                    points=[
+                        PointStruct(id=count - 25 + i, vector=d[0], payload=d[1])
+                    ]
+                )
+        docs = []
+            
+            
+            
 
 # operation_info = qdrant_client.upsert(
 #     collection_name="laiws",

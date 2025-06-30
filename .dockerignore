@@ -1,16 +1,21 @@
-# Created by https://www.toptal.com/developers/gitignore/api/windows,linux,python
-# Edit at https://www.toptal.com/developers/gitignore?templates=windows,linux,python
-
-faiss_index/
+uploads
 
 *.jpg
 *.png
-*.xlsx
+*.pdf
 *.pptx
+*.xlsx
 *.zip
+*.md
 *.docx
 
 qdrant_data
+__pycache__
+.venv
+.kube
+
+# Created by https://www.toptal.com/developers/gitignore/api/windows,linux,python
+# Edit at https://www.toptal.com/developers/gitignore?templates=windows,linux,python
 
 ### Linux ###
 *~
