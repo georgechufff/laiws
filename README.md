@@ -9,27 +9,11 @@ LAIWS (от англ. Law AI Wide Search) - это интеллектуальн�
 
 Для того, чтобы запустить приложение, необходимо скачать все зависимости из файла ```requirements.txt```.
 
-Windows:
 ```
 $ python3 -m venv .venv
 $ source .venv/bin/activate
 $ pip install -r requirements.txt
-$ gdown 1k0h3gv4GF1emsu7RTpLt2aKjUbZdNBuL
-$ tar -xf faiss_index.zip
-```
-
-Linux:
-```
-$ python3 -m venv .venv
-$ .venv\Scripts\activate.bat
-$ pip install -r requirements.txt
-$ gdown 1k0h3gv4GF1emsu7RTpLt2aKjUbZdNBuL
-$ unzip faiss_index.zip
-```
-
-Затем запустите файл main.py. 
-```
-$ streamlit run main.py
+$ python app.py
 ```
 
 ### Установка через Docker Compose
